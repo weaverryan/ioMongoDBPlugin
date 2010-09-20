@@ -54,7 +54,7 @@ This can be accessed via the plugin configuration class anywhere via:
 
 It can also be accessed from within any actions class:
 
-    class myActiosn extends sfActions
+    class myActions extends sfActions
     {
       public function executeUpdate(sfWebRequest $request)
       {
