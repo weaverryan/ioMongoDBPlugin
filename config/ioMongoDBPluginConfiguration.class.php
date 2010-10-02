@@ -62,15 +62,8 @@ class ioMongoDBPluginConfiguration extends sfPluginConfiguration
       ));
     }
 
-    require_once $mongoPath.'/lib/vendor/doctrine-common/lib/Doctrine/Common/ClassLoader.php';
-
-    // ODM Classes
-    $classLoader = new ClassLoader('Doctrine\ODM', $mongoPath.'/lib');
-    $classLoader->register();
-
-    // Common Classes
-    $classLoader = new ClassLoader('Doctrine\Common', $mongoPath.'/lib/vendor/doctrine-common/lib');
-    $classLoader->register();
+    // setup all the class loader stuff
+    $this->setupODMClassLoader($mongoPath);
 
     $config = new Configuration();
     // @TODO this will likely need to be changed
@@ -86,5 +79,24 @@ class ioMongoDBPluginConfiguration extends sfPluginConfiguration
     $this->dispatcher->notify(new sfEvent($config, 'io_mongo_db.configure_odm'));
 
     $this->documentManager = DocumentManager::create(new Mongo(), $config);
+  }
+
+  /**
+   * Configures the doctrine odm class loader
+   *
+   * @param  string $mongoPath The full path to the doctrine odm
+   * @return void
+   */
+  protected function setupODMClassLoader($mongoPath)
+  {
+    require_once $mongoPath.'/lib/vendor/doctrine-common/lib/Doctrine/Common/ClassLoader.php';
+
+    // ODM Classes
+    $classLoader = new ClassLoader('Doctrine\ODM', $mongoPath.'/lib');
+    $classLoader->register();
+
+    // Common Classes
+    $classLoader = new ClassLoader('Doctrine\Common', $mongoPath.'/lib/vendor/doctrine-common/lib');
+    $classLoader->register();
   }
 }
