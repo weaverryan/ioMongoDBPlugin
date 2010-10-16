@@ -1,0 +1,7 @@
+all:
+  io_mongo_db:
+    default_database: doctrine
+
+test:
+  io_mongo_db:
+    default_database: doctrine_test

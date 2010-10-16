@@ -75,6 +75,9 @@ class ioMongoDBPluginConfiguration extends sfPluginConfiguration
     $reader->setDefaultAnnotationNamespace('Doctrine\ODM\MongoDB\Mapping\\');
     $config->setMetadataDriverImpl(new AnnotationDriver($reader, __DIR__ . '/Documents'));
 
+    // set the database that should be used for the collection
+    $config->setDefaultDB(sfConfig::get('app_io_mongo_db_default_database', 'doctrine'));
+
     // throw an event to allow for the config to be modified
     $this->dispatcher->notify(new sfEvent($config, 'io_mongo_db.configure_odm'));
 
