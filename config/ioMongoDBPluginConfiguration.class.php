@@ -3,7 +3,7 @@
 use Doctrine\Common\ClassLoader,
     Doctrine\Common\Annotations\AnnotationReader,
     Doctrine\ODM\MongoDB\DocumentManager,
-    Doctrine\ODM\MongoDB\Mongo,
+    Doctrine\MongoDB\Connection,
     Doctrine\ODM\MongoDB\Configuration,
     Doctrine\ODM\MongoDB\Mapping\Driver\AnnotationDriver;
 
@@ -51,24 +51,48 @@ class ioMongoDBPluginConfiguration extends sfPluginConfiguration
    */
   protected function setupDoctrineODM()
   {
-    $mongoPath = sfConfig::get('mongodb_odm_dir', sfConfig::get('sf_root_dir').'/lib/vendor/mongodb_odm');
-
+    $mongoPath = sfConfig::get('mongodb_dir', sfConfig::get('sf_root_dir').'/lib/vendor/mongodb');
     if (!file_exists($mongoPath))
     {
       throw new sfException(sprintf(
         'Doctrine\'s MongoDB ODM not found at "%s". Place the library at '.
-        'that location or configure the location via sfConfig::set(\'mongodb_odm_dir\');',
+        'that location or configure the location via sfConfig::set(\'mongodb_dir\');',
         $mongoPath
       ));
     }
 
+    $mongoODMPath = sfConfig::get('mongodb_odm_dir', sfConfig::get('sf_root_dir').'/lib/vendor/mongodb_odm');
+    if (!file_exists($mongoODMPath))
+    {
+      throw new sfException(sprintf(
+        'Doctrine\'s MongoDB not found at "%s". Place the library at '.
+        'that location or configure the location via sfConfig::set(\'mongodb_odm_dir\');',
+        $mongoODMPath
+      ));
+    }
+
+    $doctrineCommonPath = sfConfig::get('doctrine_common_dir', $mongoODMPath.'/lib/vendor/doctrine-common');
+
     // setup all the class loader stuff
-    $this->setupODMClassLoader($mongoPath);
+    $this->setupODMClassLoader($mongoPath, $mongoODMPath, $doctrineCommonPath);
 
     $config = new Configuration();
-    // @TODO this will likely need to be changed
-    $config->setProxyDir(sfConfig::get('sf_lib_dir').'/mongo');
+
+    $proxyDir = sfConfig::get('sf_cache_dir').'/mongo/proxies';
+    if (!file_exists($proxyDir))
+    {
+      mkdir($proxyDir, 0777, true);
+    }
+    $config->setProxyDir($proxyDir);
     $config->setProxyNamespace('Proxies');
+
+    $hydratorDir = sfConfig::get('sf_cache_dir').'/mongo/hydrators';
+    if (!file_exists($hydratorDir))
+    {
+      mkdir($hydratorDir, 0777, true);
+    }
+    $config->setHydratorDir($hydratorDir);
+    $config->setHydratorNamespace('Hydrators');
 
     // setup the annotation reader
     $reader = new AnnotationReader();
@@ -81,7 +105,7 @@ class ioMongoDBPluginConfiguration extends sfPluginConfiguration
     // throw an event to allow for the config to be modified
     $this->dispatcher->notify(new sfEvent($config, 'io_mongo_db.configure_odm'));
 
-    $this->documentManager = DocumentManager::create(new Mongo(), $config);
+    $this->documentManager = DocumentManager::create(new Connection('mongodb://localhost'), $config);
   }
 
   /**
@@ -90,16 +114,26 @@ class ioMongoDBPluginConfiguration extends sfPluginConfiguration
    * @param  string $mongoPath The full path to the doctrine odm
    * @return void
    */
-  protected function setupODMClassLoader($mongoPath)
+  protected function setupODMClassLoader($mongoPath, $mongoODMPath, $doctrineCommonPath)
   {
-    require_once $mongoPath.'/lib/vendor/doctrine-common/lib/Doctrine/Common/ClassLoader.php';
+    $classLoader = $doctrineCommonPath.'/lib/Doctrine/Common/ClassLoader.php';
+    if (!file_exists($classLoader))
+    {
+      throw new InvalidArgumentException(sprintf('Cannot find Doctrine Class Loader at "%s"', $classLoader));
+    }
+
+    require_once $classLoader;
+
+    // MongoDB Classes
+    $classLoader = new ClassLoader('Doctrine\\MongoDB', $mongoPath.'/lib');
+    $classLoader->register();
 
     // ODM Classes
-    $classLoader = new ClassLoader('Doctrine\ODM', $mongoPath.'/lib');
+    $classLoader = new ClassLoader('Doctrine\\ODM\\MongoDB', $mongoODMPath.'/lib');
     $classLoader->register();
 
     // Common Classes
-    $classLoader = new ClassLoader('Doctrine\Common', $mongoPath.'/lib/vendor/doctrine-common/lib');
+    $classLoader = new ClassLoader('Doctrine\\Common', $doctrineCommonPath.'/lib');
     $classLoader->register();
   }
 }
