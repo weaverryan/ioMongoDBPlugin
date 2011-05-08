@@ -51,16 +51,6 @@ class ioMongoDBPluginConfiguration extends sfPluginConfiguration
    */
   protected function setupDoctrineODM()
   {
-    $mongoPath = sfConfig::get('mongodb_dir', sfConfig::get('sf_root_dir').'/lib/vendor/mongodb');
-    if (!file_exists($mongoPath))
-    {
-      throw new sfException(sprintf(
-        'Doctrine\'s MongoDB ODM not found at "%s". Place the library at '.
-        'that location or configure the location via sfConfig::set(\'mongodb_dir\');',
-        $mongoPath
-      ));
-    }
-
     $mongoODMPath = sfConfig::get('mongodb_odm_dir', sfConfig::get('sf_root_dir').'/lib/vendor/mongodb_odm');
     if (!file_exists($mongoODMPath))
     {
@@ -68,6 +58,16 @@ class ioMongoDBPluginConfiguration extends sfPluginConfiguration
         'Doctrine\'s MongoDB not found at "%s". Place the library at '.
         'that location or configure the location via sfConfig::set(\'mongodb_odm_dir\');',
         $mongoODMPath
+      ));
+    }
+
+    $mongoPath = sfConfig::get('mongodb_dir', sfConfig::get('mongodb_odm_dir').'/lib/vendor/doctrine-mongodb');
+    if (!file_exists($mongoPath))
+    {
+      throw new sfException(sprintf(
+        'Doctrine\'s MongoDB ODM not found at "%s". Place the library at '.
+        'that location or configure the location via sfConfig::set(\'mongodb_dir\');',
+        $mongoPath
       ));
     }
 
